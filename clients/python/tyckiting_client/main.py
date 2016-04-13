@@ -34,7 +34,6 @@ def main():
 
 
 class TykitingClient():
-
     def __init__(self, host='localhost', port=3000, name='bot', ai='dummy'):
         """
         Initializes the client, and AI.
@@ -98,12 +97,12 @@ class TykitingClient():
         Args:
             message: Message from server containing the winning team id
         """
-        if message.winner_team_id is None:
+        if message.winner_team_id == -1:
             result = "It's a draw."
         elif message.winner_team_id == self.team_id:
             result = "You win!"
         else:
-            result = "You loose."
+            result = "You lose."
 
         logging.info('Game ended. %s', result)
         self.ws.close()
