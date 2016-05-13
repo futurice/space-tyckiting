@@ -96,13 +96,15 @@ The resolution order of actions is as following:
 
 In response to actions each team receives an events-message that can contain any number of any of the following events:
 
-* `hit` A bot has been hit. This might mean that you have been hit, or you hit another bot.
+* `hit` A bot has been hit. This might mean that you have been hit, or you hit another bot. Cannoning an asteroid won't produce hit event.
 
 * `die` A bot has died. This might mean that you died, or that you killed another bot.
 
-* `radarEcho` Results from radaring bots. You will never be included in this event.
+* `radarEcho` Results from radaring bots and asteroids. RadarEcho won't reveal the type of detection. Your own bots will never be included in this event.
 
 * `see` When bots are close to each other, they can detect the other bot.
+
+* `seeAsteroid` When bots is close to an asteroid, it can identify it
 
 * `detected` You will be notified that you have been seen or radared.
 
