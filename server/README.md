@@ -32,7 +32,7 @@ https://github.com/futurice/space-tyckiting/tree/master/clients
 ```
 npm install
 
-node start-server.js
+npm start
 ```
 
 After server is running, you can follow the progress of the game with your favorite web browser at http://localhost:3000

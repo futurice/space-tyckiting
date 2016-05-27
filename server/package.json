@@ -2,6 +2,9 @@
   "name": "space-tyckiting",
   "version": "0.1.0",
   "private": "true",
+  "scripts": {
+    "start": "node start-server.js"
+  },
   "dependencies": {
     "bluebird": "^2.9.13",
     "chalk": "^1.0.0",
