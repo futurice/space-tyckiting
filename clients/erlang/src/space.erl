@@ -46,51 +46,53 @@ websocket_terminate(Reason, _ConnState, State) ->
               [State, Reason]),
     {close, <<>>, bye}.
 
-handle_request({[{<<"type">>, <<"connected">>},
-                 {<<"teamId">>, TeamId},
-                 Config]}, _State) ->
-    InitialConfig = parse_config(Config),
-    io:format("Yay, connected to server! teamid ~p config ~p ~n",
-              [TeamId, InitialConfig]),
-    %% No need to reply:
-    dont_reply;
-
-handle_request({[{<<"type">>, <<"start">>},
-                 {<<"you">>, Team},
-                 Config,
-                 {<<"otherTeams">>, Teams}]}, State) ->
-    ParsedConfig = parse_config(Config),
-    ParsedTeam   = parse_team(Team),
-    ParsedTeams  = lists:map(fun parse_team/1, Teams),
-    {ok, AI} = application:get_env(current_ai),
-    apply(AI, give_moves, [0, ParsedConfig, ParsedTeam,
-                           ParsedTeams, [], State]);
-
-handle_request({[{<<"type">>, <<"end">>},
-                 {<<"you">>, Team},
-                 {<<"winnerTeamId">>, WinnerTeam}]}, _State) ->
-    #team{team_id = TeamId } = parse_team(Team),
-    case WinnerTeam == TeamId of
-        true ->
-            io:format("Congrats, you won!~n");
-        false ->
-            io:format("Oh noez, you lost!~n")
-    end,
-    dont_reply;
-
-handle_request({[{<<"type">>, <<"events">>},
-                 {<<"roundId">>, RoundId},
-                 Config,
-                 {<<"you">>, Team},
-                 {<<"otherTeams">>, Teams},
-                 {<<"events">>, Events}]}, State) ->
-    ParsedConfig = parse_config(Config),
-    ParsedTeam   = parse_team(Team),
-    ParsedTeams  = lists:map(fun parse_team/1, Teams),
-    ParsedEvents = lists:map(fun parse_event/1, Events),
-    {ok, AI} = application:get_env(current_ai),
-    apply(AI, give_moves, [RoundId, ParsedConfig, ParsedTeam,
-                           ParsedTeams, ParsedEvents, State]);
+handle_request({L}, State) ->
+    case v(<<"type">>, L) of
+        <<"connected">> ->
+            TeamId = v(<<"teamId">>, L),
+            Config = v(<<"config">>, L),
+            InitialConfig = parse_config(Config),
+            io:format("Yay, connected to server! teamid ~p config ~p ~n",
+                      [TeamId, InitialConfig]),
+            dont_reply;
+        <<"start">> ->
+            Team         = v(<<"you">>, L),
+            Teams        = v(<<"otherTeams">>, L),
+            Config       = v(<<"config">>, L),
+            ParsedConfig = parse_config(Config),
+            ParsedTeam   = parse_team(Team),
+            ParsedTeams  = lists:map(fun parse_team/1, Teams),
+            {ok, AI}     = application:get_env(current_ai),
+            apply(AI, give_moves, [0, ParsedConfig, ParsedTeam,
+                                   ParsedTeams, [], State]);
+        <<"end">> ->
+            Team       = v(<<"you">>, L),
+            WinnerTeam = v(<<"winnerTeamId">>, L),
+            #team{team_id = TeamId} = parse_team(Team),
+            case WinnerTeam == TeamId of
+                true ->
+                    io:format("Congrats, you won!~n");
+                false ->
+                    io:format("Oh noez, you lost!~n")
+            end,
+            dont_reply;
+        <<"events">> ->
+            RoundId      = v(<<"roundId">>, L),
+            Team         = v(<<"you">>, L),
+            Teams        = v(<<"otherTeams">>, L),
+            Events       = v(<<"events">>, L),
+            Config       = v(<<"config">>, L),
+            ParsedConfig = parse_config(Config),
+            ParsedTeam   = parse_team(Team),
+            ParsedTeams  = lists:map(fun parse_team/1, Teams),
+            ParsedEvents = lists:map(fun parse_event/1, Events),
+            {ok, AI} = application:get_env(current_ai),
+            apply(AI, give_moves, [RoundId, ParsedConfig, ParsedTeam,
+                                   ParsedTeams, ParsedEvents, State]);
+        _ ->
+            io:format("Unsupported request from server: ~p~n", [{L}]),
+            dont_reply
+    end;
 
 handle_request(X, _State) ->
     io:format("Unsupported request from server: ~p~n", [X]),
@@ -107,92 +109,82 @@ mk_actions(RoundId, BotActions) ->
       {actions, BotActions}
      ]}.
 
-parse_config({<<"config">>,
-              {[{<<"bots">>, Bots},
-                {<<"fieldRadius">>, FieldRadius},
-                {<<"move">>, Move},
-                {<<"startHp">>, StartHP},
-                {<<"cannon">>, Cannon},
-                {<<"radar">>, Radar},
-                {<<"see">>, See},
-                {<<"maxCount">>, MaxCount},
-                {<<"asteroids">>, Asteroids},
-                {<<"loopTime">>, LoopTime},
-                {<<"noWait">>, NoWait}]}}) ->
-    #config{bots = Bots,
-            field_radius = FieldRadius,
-            move = Move,
-            start_hp = StartHP,
-            cannon = Cannon,
-            radar = Radar,
-            see = See,
-            max_count = MaxCount,
-            asteroids = Asteroids,
-            loop_time = LoopTime,
-            no_wait = NoWait}.
+parse_config({L}) ->
+    #config{bots         = v(<<"bots">>, L),
+            field_radius = v(<<"fieldRadius">>, L),
+            move         = v(<<"move">>, L),
+            start_hp     = v(<<"startHp">>, L),
+            cannon       = v(<<"cannon">>, L),
+            radar        = v(<<"radar">>, L),
+            see          = v(<<"see">>, L),
+            max_count    = v(<<"maxCount">>, L),
+            asteroids    = v(<<"asteroids">>, L),
+            loop_time    = v(<<"loopTime">>, L),
+            no_wait      = v(<<"noWait">>, L)}.
 
-parse_team({[{<<"name">>, Name},
-             {<<"teamId">>, TeamId},
-             {<<"bots">>, Bots}]}) ->
-    #team{name = Name,
-          team_id = TeamId,
-          bots = lists:map(fun parse_bot/1, Bots)}.
+parse_team({L}) ->
+    Bots = v(<<"bots">>, L),
+    #team{name    = v(<<"name">>, L),
+          team_id = v(<<"teamId">>, L),
+          bots    = lists:map(fun parse_bot/1, Bots)}.
 
-parse_bot({[{<<"botId">>, Id},
-            {<<"name">>, Name},
-            {<<"teamId">>, TeamId},
-            {<<"alive">>, Alive},
-            {<<"pos">>, {[{<<"x">>, X}, {<<"y">>, Y}]}},
-            {<<"hp">>, HP}]}) ->
-    #bot{bot_id = Id,
-         name = Name,
-         team_id = TeamId,
-         alive = Alive,
-         pos = {X,Y},
-         hp = HP};
-%% Opponent bots can be given without pos and hp
-parse_bot({[{<<"botId">>, Id},
-            {<<"name">>, Name},
-            {<<"teamId">>, TeamId},
-            {<<"alive">>, Alive}]}) ->
-    #bot{bot_id = Id,
-         name = Name,
-         team_id = TeamId,
-         alive = Alive}.
+parse_bot({L}) ->
+    case v(<<"pos">>, L) of
+        %% Opponent bots can be given without pos and hp
+        false ->
+            #bot{bot_id  = v(<<"botId">>, L),
+                 name    = v(<<"name">>, L),
+                 team_id = v(<<"teamId">>, L),
+                 alive   = v(<<"alive">>, L)};
+        {PosL} ->
+            X = v(<<"x">>, PosL),
+            Y = v(<<"y">>, PosL),
+            #bot{bot_id  = v(<<"botId">>, L),
+                 name    = v(<<"name">>, L),
+                 team_id = v(<<"teamId">>, L),
+                 alive   = v(<<"alive">>, L),
+                 pos     = {X,Y},
+                 hp      = v(<<"hp">>, L)}
+    end.
 
-parse_event({[{<<"event">>, <<"hit">>},
-              {<<"source">>, Source},
-              {<<"botId">>, BotId}]}) ->
-    {hit, BotId, Source};
+parse_event({L}) ->
+    parse_event(v(<<"event">>, L), L).
 
-parse_event({[{<<"event">>, <<"die">>},
-              {<<"botId">>, BotId}]}) ->
-    {die, BotId};
+parse_event(<<"hit">>, L) ->
+    {hit, v(<<"botId">>, L), v(<<"source">>, L)};
 
-parse_event({[{<<"event">>, <<"see">>},
-              {<<"source">>, Source},
-              {<<"botId">>, BotId},
-              {<<"pos">>, {[{<<"x">>, X}, {<<"y">>, Y}]}}]}) ->
-    {see, Source, BotId, {X, Y}};
+parse_event(<<"die">>, L) ->
+    {die, v(<<"botId">>, L)};
 
-parse_event({[{<<"event">>, <<"radarEcho">>},
-              {<<"pos">>, {[{<<"x">>, X}, {<<"y">>, Y}]}}]}) ->
-    {radar_echo, {X, Y}};
+parse_event(<<"see">>, L) ->
+    {Pos} = v(<<"pos">>, L),
+    {see, v(<<"source">>, L), v(<<"botId">>, L),
+     {v(<<"x">>, Pos), v(<<"y">>, Pos)}
+    };
 
-parse_event({[{<<"event">>, <<"detected">>},
-              {<<"botId">>, BotId}]}) ->
-    {detected, BotId};
+parse_event(<<"radarEcho">>, L) ->
+    {Pos} = v(<<"pos">>, L),
+    {radar_echo, {v(<<"x">>, Pos), v(<<"y">>, Pos)}};
 
-parse_event({[{<<"event">>, <<"damaged">>},
-              {<<"botId">>, BotId},
-              {<<"damage">>, Damage}]}) ->
-    {damaged, BotId, Damage};
+parse_event(<<"seeAsteroid">>, L) ->
+    {Pos} = v(<<"pos">>, L),
+    {see_asteroid, {v(<<"x">>, Pos), v(<<"y">>, Pos)}};
 
-parse_event({[{<<"event">>, <<"move">>},
-              {<<"botId">>, BotId},
-              {<<"pos">>, {[{<<"x">>, X}, {<<"y">>, Y}]}}]}) ->
-    {move, BotId, {X, Y}};
+parse_event(<<"detected">>, L) ->
+    {detected, v(<<"botId">>, L)};
 
-parse_event({[{<<"event">>, <<"noaction">>},
-              {<<"botId">>, BotId}]}) ->
-    {noaction, BotId}.
+parse_event(<<"damaged">>, L) ->
+    {damaged, v(<<"botId">>, L), v(<<"damage">>, L)};
+
+parse_event(<<"move">>, L) ->
+    {Pos} = v(<<"pos">>, L),
+    {move, v(<<"botId">>, L), {v(<<"x">>, Pos), v(<<"y">>, Pos)}};
+
+parse_event(<<"noaction">>, L) ->
+    {noaction, v(<<"botId">>, L)}.
+
+v(Key, List) ->
+    case lists:keyfind(Key, 1, List) of
+        false    -> false;
+        {_, Val} -> Val
+    end.
