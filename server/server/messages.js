@@ -67,7 +67,7 @@ function mkEventsMessage(player, players, bots, config, roundId, events) {
         config: mkUserConfig(config),
         you: combineYourTeam(player, bots),
         otherTeams: combineOtherTeams(player, players, bots),
-        events: events
+        events: _.shuffle(events)
     };
 }
 
