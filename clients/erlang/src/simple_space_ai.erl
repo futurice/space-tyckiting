@@ -47,14 +47,15 @@ give_moves(RoundId,
     Seen = RadarSeen ++ AdjacentSeen,
 
     %% Other supported events:
-    %% Hits    = [{radar_echo, BotId, Source} ||
-    %%               {radar_echo, BotId, Source} <- Events],
-    %% Dies    = [{die, BotId} || {die, BotId} <- Events],
-    %% Detects = [{detected, BotId} || {detected, BotId} <- Events],
-    %% Damages = [{damaged, BotId, Damage}
-    %%               || {damaged, BotId, Damage} <- Events],
-    %% Moves   = [{move, BotId, {X, Y}} || {move, BotId, {X, Y}} <- Events],
-    %% NoActs  = [{noaction, BotId} || {noaction, BotId} <- Events],
+    %% Hits      = [{radar_echo, BotId, Source} ||
+    %%                 {radar_echo, BotId, Source} <- Events],
+    %% Dies      = [{die, BotId} || {die, BotId} <- Events],
+    %% Detects   = [{detected, BotId} || {detected, BotId} <- Events],
+    %% Damages   = [{damaged, BotId, Damage}
+    %%                 || {damaged, BotId, Damage} <- Events],
+    %% Moves     = [{move, BotId, {X, Y}} || {move, BotId, {X, Y}} <- Events],
+    %% NoActs    = [{noaction, BotId} || {noaction, BotId} <- Events],
+    %% Asteroids = [{see_asteroid, Pos} || {see_asteroid, Pos} <- Events],
 
     %% TODO: Implement your logic and return, right now,
     %%       all bots are scanning and cannoning
