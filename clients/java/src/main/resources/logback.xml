@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <timestamp key="timestamp" datePattern="yyyy-MM-dd_HH-mm-ss"/>
+    
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %-5level %logger{15} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+    <appender name="RECV" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                RECV &lt;- %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+    <appender name="SEND" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                SEND -&gt; %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+    <!--
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/tyckiting_${timestamp}.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>
+                %-5level %logger{15} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+    -->
+
+    <logger name="recvLog" level="info" additivity="false">
+        <appender-ref ref="RECV" />
+        <!--<appender-ref ref="FILE" />-->
+    </logger>
+    <logger name="sendLog" level="info" additivity="false">
+        <appender-ref ref="SEND" />
+        <!--<appender-ref ref="FILE" />-->
+    </logger>
+    <logger name="spacetyckiting" level="debug" additivity="false">
+        <appender-ref ref="STDOUT" />
+        <!--<appender-ref ref="FILE" />-->
+    </logger>
+    
+    <root level="warn" >
+        <appender-ref ref="STDOUT" />
+        <!--<appender-ref ref="FILE" />-->
+    </root>
+</configuration>
